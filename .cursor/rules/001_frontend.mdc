@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+---
+
+description: UI/UX 디자인 시스템 및 Tailwind CSS 스타일 규칙  
+globs: app/**/*.{tsx,ts}, components/**/*.{tsx,ts}
+---
+
+# UI & Styling Rules
+
+- **Theme Color:** 
+- **Design System**
+ 
+
+- **Components**
+
+
+- **Responsiveness**
