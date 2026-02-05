@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Lock, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Lock, Mail, Terminal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { setDevAuthed } from "@/lib/auth/dev-auth";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -89,6 +92,21 @@ export default function LoginPage() {
           >
             로그인
           </Button>
+
+          {process.env.NODE_ENV === "development" && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-dashed border-primary/50 text-primary hover:bg-primary/5 gap-2"
+              onClick={() => {
+                setDevAuthed();
+                router.push("/create/step1");
+              }}
+            >
+              <Terminal className="w-4 h-4" />
+              DEV 로그인 (개발용)
+            </Button>
+          )}
         </form>
 
         {/* Divider */}
