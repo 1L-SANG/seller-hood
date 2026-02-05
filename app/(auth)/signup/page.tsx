@@ -2,22 +2,90 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Lock, Mail, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Lock, Mail, User, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Supabase Auth 연동
-    console.log("Signup attempt:", { name, email, password });
+    setError(null);
+    setIsLoading(true);
+
+    // 폼 검증
+    if (name.length < 2) {
+      setError("이름은 2자 이상 입력해주세요.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("비밀번호는 8자 이상 입력해주세요.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+
+      // Supabase Auth 회원가입
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name, // user_metadata에 이름 저장
+          },
+        },
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error("사용자 생성에 실패했습니다.");
+      }
+
+      // users 테이블에 INSERT
+      const { error: insertError } = await supabase.from("users").insert({
+        id: authData.user.id,
+        name,
+        email,
+        plan: "starter" as const,
+        credits_limit: 10,
+        credits_used: 0,
+        credits_reset_at: new Date(
+          new Date().getFullYear(),
+          new Date().getMonth() + 1,
+          1
+        ).toISOString(),
+      } as any); // 타입 캐스팅 (임시 해결책)
+
+      if (insertError) {
+        console.error("users 테이블 INSERT 실패:", insertError);
+        // Auth는 성공했으므로 계속 진행
+      }
+
+      // 성공: Step 1로 리다이렉트
+      router.push("/create/step1");
+    } catch (err: any) {
+      console.error("회원가입 에러:", err);
+      setError(err.message || "회원가입 중 오류가 발생했습니다.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -47,6 +115,13 @@ export default function SignupPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* 에러 메시지 */}
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="name" className="text-foreground-secondary">
               이름
@@ -61,6 +136,8 @@ export default function SignupPage() {
                 onChange={(e) => setName(e.target.value)}
                 className="pl-11"
                 required
+                minLength={2}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -79,6 +156,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-11"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -98,6 +176,7 @@ export default function SignupPage() {
                 className="pl-11"
                 required
                 minLength={8}
+                disabled={isLoading}
               />
             </div>
             <p className="text-xs text-foreground-muted">
@@ -109,8 +188,16 @@ export default function SignupPage() {
             type="submit"
             className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transition-all duration-250"
             size="lg"
+            disabled={isLoading}
           >
-            회원가입
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                회원가입 중...
+              </>
+            ) : (
+              "회원가입"
+            )}
           </Button>
         </form>
 

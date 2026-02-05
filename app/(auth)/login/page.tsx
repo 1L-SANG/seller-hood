@@ -3,23 +3,59 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, Terminal } from "lucide-react";
+import { Lock, Mail, Terminal, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { setDevAuthed } from "@/lib/auth/dev-auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Supabase Auth 연동
-    console.log("Login attempt:", { email, password });
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const supabase = createClient();
+
+      // Supabase Auth 로그인
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      if (!data.user) {
+        throw new Error("로그인에 실패했습니다.");
+      }
+
+      // 성공: Step 1로 리다이렉트
+      router.push("/create/step1");
+      router.refresh(); // 미들웨어 세션 갱신을 위해
+    } catch (err: any) {
+      console.error("로그인 에러:", err);
+      
+      // 사용자 친화적 에러 메시지
+      if (err.message.includes("Invalid login credentials")) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      } else {
+        setError(err.message || "로그인 중 오류가 발생했습니다.");
+      }
+      
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,6 +85,13 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* 에러 메시지 */}
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground-secondary">
               이메일
@@ -63,6 +106,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-11"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -81,6 +125,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-11"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -89,8 +134,16 @@ export default function LoginPage() {
             type="submit"
             className="w-full bg-gradient-to-r from-primary to-primary-light hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 transition-all duration-250"
             size="lg"
+            disabled={isLoading}
           >
-            로그인
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                로그인 중...
+              </>
+            ) : (
+              "로그인"
+            )}
           </Button>
 
           {process.env.NODE_ENV === "development" && (
