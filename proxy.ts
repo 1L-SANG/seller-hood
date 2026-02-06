@@ -6,7 +6,7 @@ import { updateSession } from '@/lib/supabase/middleware';
  * Next.js Middleware
  * 인증 가드 및 세션 관리
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
 
   // 보호된 경로 정의
