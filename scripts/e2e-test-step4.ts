@@ -186,9 +186,10 @@ async function testStep4E2E() {
       }
 
       console.log('✅ Style Features 저장 확인');
-      console.log('   Camera Angle:', features.camera_angle);
-      console.log('   Tone Level:', features.tone_level);
-      console.log('   Display Tags:', features.display_tags, '\n');
+      const featureRow: any = features as any;
+      console.log('   Camera Angle:', featureRow.camera_angle);
+      console.log('   Tone Level:', featureRow.tone_level);
+      console.log('   Display Tags:', featureRow.display_tags, '\n');
 
       // 7. 정리 (테스트 데이터 삭제)
       console.log('7️⃣ 테스트 데이터 정리');

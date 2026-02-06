@@ -41,9 +41,8 @@ export async function analyzeReferenceImage(
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = response.headers.get('content-type') || 'image/jpeg';
 
-    // 2. Gemini 모델 사용 (gemini-2.0-flash-exp 또는 gemini-1.5-pro)
-    // 사용자가 요청한 'gemini-3-pro'는 현재 존재하지 않으므로, 가장 최신인 gemini-2.0-flash 또는 gemini-1.5-pro를 사용합니다.
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    // 2. Gemini Vision 모델 (gemini-1.5-flash: 이미지 분석 지원, 널리 사용 가능)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // 3. 프롬프트 생성
     const prompt = `
